@@ -66,46 +66,55 @@ plotscript, enterNewArea, begin
 end
 
 
-script, updatePlayerSlicePosition, begin
+script, updateCamera, begin
 	camera follows slice(player_slice)
 end
+
+script, updatePlayerState, begin
+	if (player_is_jumping == 1) then (
+		move slice with wallchecking (player_slice, 0, 0--player_jump_speed,100)
+		player_jump_current_hangtime:=player_jump_current_hangtime+1
+	)
+	if (player_jump_current_hangtime == player_jump_hangtime_max) then (
+		player_is_jumping:=0
+		player_jump_current_hangtime:=0
+		if (is_player_on_ground == 0) then (player_is_falling:=1)
+	)
+	
+	if (is_player_on_ground == 1) then (
+		player_jump_current_hangtime:=0
+		player_is_jumping:=0
+		player_is_falling:=0
+	)
+end
+
+
 
 script, gameloop, begin
 	subscript, tickEvent, begin
 		# Check inputs and key changes.
 		# Check and change object states.
 		keypress_handler()
-		if (is_player_on_ground == 0 && player_is_jumping == 0 || player_is_falling == 1) then (
-			player_gravity
-		)
-		if (player_is_jumping == 1) then (
-			move slice with wallchecking (player_slice, 0, 0--player_jump_speed,100)
-			player_jump_current_hangtime:=player_jump_current_hangtime+1
-		)
-		if (player_jump_current_hangtime == player_jump_hangtime_max) then (
-			player_is_jumping:=0
-			player_jump_current_hangtime:=0
-			if (is_player_on_ground == 0) then (player_is_falling:=1)
-		)
-		
-		if (is_player_on_ground == 1) then (
-			player_jump_current_hangtime:=0
-			player_is_jumping:=0
-			player_is_falling:=0
-		)
-		updatePlayerSlicePosition()
+		updatePlayerstate()
+		update_player_gravity()	
+		updateCamera()
 		wait (debug_slowdown)
 	end
-	
+
+
 	subscript, drawEvent, begin
 		# Check image states and change image states.
 	end
+
+
 
 	#set script "gameloop" to run in 1 tick again.
 	set timer (timer:gameloop, 1, 1, @gameloop)
 	tickEvent()
 	drawEvent()
 end
+
+
 
 
 
@@ -121,13 +130,15 @@ script, keypress_handler, begin
 		move slice with wallchecking (player_slice, 0--player_run_speed, 0, 100)
 	)
 	if (check_jump_keypress == 1 && player_is_falling == 0 && player_is_jumping == 0 && player_jump_current_hangtime < player_jump_hangtime_max) then (
-			player_is_jumping:=1
+		player_is_jumping:=1
 	)
 	check_debug_keys()
 end
 
-script, player_gravity, begin
-	move slice with wallchecking (player_slice, 0, player_fall_speed, 100)
+script, update_player_gravity, begin
+	if (is_player_on_ground == 0 && player_is_jumping == 0 || player_is_falling == 1) then (
+		move slice with wallchecking (player_slice, 0, player_fall_speed, 100)
+	)
 end
 
 script, is_player_on_ground, begin
@@ -161,19 +172,40 @@ end
 
 script, check_debug_keys, begin
 	if (key is pressed(key:Shift) && key is pressed(key:G)) then (
-		show value (is_player_on_ground)
+		$1 = "Player is on ground: %d"
+		string sprintf(0, 1, is_player_on_ground)
+		show string (0)
 	)
 	if (key is pressed(key:Shift) && key is pressed(key:J)) then (
-		show value (player_is_jumping)
+		$1 = "Player is jumping: %d"
+		string sprintf(0, 1, player_is_jumping)
+		show string (0)
 	)
 	if (key is pressed(key:Shift) && key is pressed(key:F)) then (
-		show value (player_is_falling)
+		$1 = "Player is falling: %d"
+		string sprintf(0, 1, player_is_falling)
+		show string (0)
 	)
 	if (key is pressed(key:Shift) && key is pressed(key:R)) then (
+		$1 = "Player is on running: %d"
+		#string sprintf(0, 1, player_is_running)
 		#show value (player_is_)
+		#show string (0)
 	)
 	if (key is pressed(key:Shift) && key is pressed(key:N)) then (
-		show no value 
+		show no value
+	)
+	if (key is pressed(key:Left Bracket)) then (
+		$1 = "Debug slowdown decreased: %d"
+		debug_slowdown:=debug_slowdown--1 
+		string sprintf(0, 1, debug_slowdown)
+		show string (0)
+	)
+	if (key is pressed(key:Right Bracket)) then (
+		$1 = "Debug slowdown increased: %d"
+		debug_slowdown:=debug_slowdown+1 
+		string sprintf(0, 1, debug_slowdown)
+		show string (0)
 	)
 	
 end
