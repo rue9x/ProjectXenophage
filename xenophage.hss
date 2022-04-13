@@ -23,15 +23,49 @@ global variable, begin
 	9, player_jump_current_hangtime
 	10, player_jump_hangtime_max
 	11, debug_slowdown
+	12, framecount
+	13, player_cur_frame
+	14, player_direction
+	100,player_pal_0
+	101,player_pal_1
+	102,player_pal_2
+	103,player_pal_3
+	104,player_pal_4
+	105,player_pal_5
+	106,player_pal_6
+	107,idle_sprite_0
+	108,idle_sprite_1
+	109,idle_sprite_2
+	110,idle_sprite_3
+	111,idle_sprite_4
+	112,idle_sprite_5
+	113,idle_sprite_6
+	114,idle_anim_first
+	115,idle_anim_last
+	116,idle_anim_speed
+	117,player_is_running
+	118,run_sprite_0
+	119,run_sprite_1
+	120,run_sprite_2
+	121,run_sprite_3
+	122,run_sprite_4
+	123,run_sprite_5
+	124,run_sprite_6
+	125,run_sprite_7
+	126,run_anim_first
+	127,run_anim_last
+	128,run_anim_speed
+	129,player_is_idle
+
 end
 
 
 plotscript, create_player, begin
-	variable (player_pal_0, player_pal_1, player_pal_2, player_pal_3, player_pal_4, player_pal_5, player_pal_6)
-	variable (idle_sprite_0, idle_sprite_1, idle_sprite_2, idle_sprite_3, idle_sprite_4, idle_sprite_5, idle_sprite_6)
-
 	player_sprite_width:=36 # Global for use later
 	player_sprite_height:=37 # Global for use later
+	player_direction:=1
+	player_is_idle:=1
+	player_is_running:=0
 	player_run_speed:=8
 	player_jump_speed:=8
 	player_fall_speed:=10
@@ -53,6 +87,22 @@ plotscript, create_player, begin
 	idle_sprite_4:=13
 	idle_sprite_5:=14
 	idle_sprite_6:=15
+	run_sprite_0:=17
+	run_sprite_1:=18
+	run_sprite_2:=19
+	run_sprite_3:=20
+	run_sprite_4:=21
+	run_sprite_5:=22
+	run_sprite_6:=23
+	run_sprite_7:=24
+	
+	player_cur_frame:=0
+	idle_anim_first:=idle_sprite_0
+	idle_anim_last:=idle_sprite_6
+	idle_anim_speed:=4
+	run_anim_first:=17
+	run_anim_last:=24
+	run_anim_speed:=4
 	player_slice:=load sprite (spritetype:large enemy, idle_sprite_0, player_pal_0)
 	set parent(player_slice,lookup slice(sl:walkabout layer))
 end
@@ -74,21 +124,42 @@ script, updatePlayerState, begin
 	if (player_is_jumping == 1) then (
 		move slice with wallchecking (player_slice, 0, 0--player_jump_speed,100)
 		player_jump_current_hangtime:=player_jump_current_hangtime+1
+		player_is_running:=0
+		player_is_falling:=0
+		player_is_idle:=0
+		# make the player soar higher. 
+
 	)
 	if (player_jump_current_hangtime == player_jump_hangtime_max) then (
 		player_is_jumping:=0
 		player_jump_current_hangtime:=0
-		if (is_player_on_ground == 0) then (player_is_falling:=1)
+		# no more jumping for you!
+		if (is_player_on_ground == 0) then (
+			player_is_falling:=1
+			player_is_running:=0
+			player_is_idle:=0
+			# can't be running or idle if you're falling.
+		)
 	)
 	
 	if (is_player_on_ground == 1) then (
 		player_jump_current_hangtime:=0
 		player_is_jumping:=0
 		player_is_falling:=0
+		# could still be running or idle.
+		if (player_is_running == 0) then (
+			player_is_idle:=1
+		)
 	)
+
+
 end
 
 
+script, tickFrameCount, begin
+	framecount:=framecount+1
+	if (framecount>60) then (framecount:=1)
+end
 
 script, gameloop, begin
 	subscript, tickEvent, begin
@@ -98,40 +169,75 @@ script, gameloop, begin
 		updatePlayerstate()
 		update_player_gravity()	
 		updateCamera()
-		wait (debug_slowdown)
+		
 	end
 
 
 	subscript, drawEvent, begin
 		# Check image states and change image states.
+		tickFrameCount()
+		if (player_direction == -1) then (
+			horiz flip sprite (player_slice, true)
+		)
+		if (player_direction == 1) then (
+			horiz flip sprite (player_slice, false)
+		)
+
+		if (player_is_idle == 1) then (
+			replace sprite (player_slice, spritetype: large enemy, get_anim_frame(idle_anim_first,idle_anim_last,idle_anim_speed), player_pal_0)
+		)
+		if (player_is_running == 1) then (
+			replace sprite (player_slice, spritetype: large enemy, get_anim_frame(run_anim_first,run_anim_last,run_anim_speed), player_pal_0)
+		)
 	end
 
 
 
 	#set script "gameloop" to run in 1 tick again.
+	wait (debug_slowdown)
 	set timer (timer:gameloop, 1, 1, @gameloop)
 	tickEvent()
 	drawEvent()
 end
 
-
-
-
-
-
+script, get_anim_frame,first,last,spd, begin
+	variable (retval, cell_num)
+	retval:=framecount / spd
+	cell_num:=retval,mod,((last -- first)+1) # This will return just which cell number, but not the actual sprite to play.
+	retval:= first + cell_num
+	return (retval)
+end
 
 script, keypress_handler, begin
 	variable (horizontal_key)
+	variable (idle)
 	horizontal_key:= check_horizontal_keypress()
+	idle:=1
 	if (horizontal_key == 1) then (
 		move slice with wallchecking (player_slice, player_run_speed, 0, 100)
+		player_direction:=1
+		idle:=0
 	)
 	if (horizontal_key == -1) then (		
 		move slice with wallchecking (player_slice, 0--player_run_speed, 0, 100)
+		player_direction:=-1
+		idle:=0
 	)
+
 	if (check_jump_keypress == 1 && player_is_falling == 0 && player_is_jumping == 0 && player_jump_current_hangtime < player_jump_hangtime_max) then (
-		player_is_jumping:=1
+		player_is_jumping:=1 # I'd like to handle this in player state... but...
+		idle:=0
 	)
+	if (horizontal_key <> 0 && player_is_jumping == 0 && is_player_on_ground == 1) then (
+		player_is_running:=1 # I'd like to handle this in the player state, but... :(
+		idle:=0
+	)
+	if (horizontal_key == 0) then (
+		player_is_running:=0 # Doesn't matter if you're in the air or not. You're not running if you're not pressing a button.
+	)
+	if (idle==1 && player_is_falling == 0 && player_is_jumping == 0 && is_player_on_ground == 1) then (
+		player_is_idle:=1
+	) 
 	check_debug_keys()
 end
 
@@ -171,6 +277,13 @@ script, check_horizontal_keypress, begin
 end
 
 script, check_debug_keys, begin
+
+	if (key is pressed(key:Shift) && key is pressed(key:A)) then (
+		$1 = "Animation Frame: %d"
+		string sprintf(0, 1, get_anim_frame(idle_anim_first,idle_anim_last,idle_anim_speed))
+		show string (0)
+	)
+
 	if (key is pressed(key:Shift) && key is pressed(key:G)) then (
 		$1 = "Player is on ground: %d"
 		string sprintf(0, 1, is_player_on_ground)
@@ -187,21 +300,28 @@ script, check_debug_keys, begin
 		show string (0)
 	)
 	if (key is pressed(key:Shift) && key is pressed(key:R)) then (
-		$1 = "Player is on running: %d"
-		#string sprintf(0, 1, player_is_running)
-		#show value (player_is_)
-		#show string (0)
+		$1 = "Player is running: %d"
+		string sprintf(0, 1, player_is_running)
+		show value (player_is_running)
+		show string (0)
+	)
+
+	if (key is pressed(key:Shift) && key is pressed(key:I)) then (
+		$1 = "Player is idle: %d"
+		string sprintf(0, 1, player_is_idle)
+		show value (player_is_idle)
+		show string (0)
 	)
 	if (key is pressed(key:Shift) && key is pressed(key:N)) then (
 		show no value
 	)
-	if (key is pressed(key:Left Bracket)) then (
+	if (new keypress(key:Left Bracket)) then (
 		$1 = "Debug slowdown decreased: %d"
 		debug_slowdown:=debug_slowdown--1 
 		string sprintf(0, 1, debug_slowdown)
 		show string (0)
 	)
-	if (key is pressed(key:Right Bracket)) then (
+	if (new keypress(key:Right Bracket)) then (
 		$1 = "Debug slowdown increased: %d"
 		debug_slowdown:=debug_slowdown+1 
 		string sprintf(0, 1, debug_slowdown)
@@ -213,6 +333,7 @@ end
 	
 plotscript, defnewgame, begin
 	debug_slowdown:=0
+	framecount:=1
 	init mouse
 	suspend player
 	#start the game loop
