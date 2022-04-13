@@ -1,0 +1,190 @@
+# This is my first attempt in a VERY long time at coding for the OHRRPGCE. 
+# Things might be a bit messy, but everything here is done in the order I recalled these. 
+# Rather; The easiest stuff to code in first. The essentials. I might need help with this later. 
+# Without further ado.. [Spazman -- 5/1/2021]
+# Rue starting on 2/19/2022
+
+define constant, begin
+	#lookup constants
+	#timer constants
+	0, timer:gameloop
+end
+
+global variable, begin
+	0, game:state
+	1, player_slice
+	2, player_sprite_height
+	3, player_sprite_width
+	4, player_run_speed
+	5, player_fall_speed
+	6, player_jump_speed
+	7, player_is_jumping
+	8, player_is_falling
+	9, player_jump_current_hangtime
+	10, player_jump_hangtime_max
+	11, debug_slowdown
+end
+
+
+plotscript, create_player, begin
+	variable (player_pal_0, player_pal_1, player_pal_2, player_pal_3, player_pal_4, player_pal_5, player_pal_6)
+	variable (idle_sprite_0, idle_sprite_1, idle_sprite_2, idle_sprite_3, idle_sprite_4, idle_sprite_5, idle_sprite_6)
+
+	player_sprite_width:=36 # Global for use later
+	player_sprite_height:=37 # Global for use later
+	player_run_speed:=8
+	player_jump_speed:=8
+	player_fall_speed:=10
+	player_jump_hangtime_max:=15
+	player_jump_current_hangtime:=0
+	player_is_falling:=0
+	player_is_jumping:=0
+	player_pal_0:=12
+	player_pal_1:=12
+	player_pal_2:=12
+	player_pal_3:=12
+	player_pal_4:=12
+	player_pal_5:=12
+	player_pal_6:=12
+	idle_sprite_0:=9
+	idle_sprite_1:=10
+	idle_sprite_2:=11
+	idle_sprite_3:=12
+	idle_sprite_4:=13
+	idle_sprite_5:=14
+	idle_sprite_6:=15
+	player_slice:=load sprite (spritetype:large enemy, idle_sprite_0, player_pal_0)
+	set parent(player_slice,lookup slice(sl:walkabout layer))
+end
+
+
+plotscript, enterNewArea, begin
+	create_player()
+	set slice x(player_slice,hero pixel x(me))
+	set slice y(player_slice,hero pixel y(me))
+
+end
+
+
+script, updatePlayerSlicePosition, begin
+	camera follows slice(player_slice)
+end
+
+script, gameloop, begin
+	subscript, tickEvent, begin
+		# Check inputs and key changes.
+		# Check and change object states.
+		keypress_handler()
+		if (is_player_on_ground == 0 && player_is_jumping == 0 || player_is_falling == 1) then (
+			player_gravity
+		)
+		if (player_is_jumping == 1) then (
+			move slice with wallchecking (player_slice, 0, 0--player_jump_speed,100)
+			player_jump_current_hangtime:=player_jump_current_hangtime+1
+		)
+		if (player_jump_current_hangtime == player_jump_hangtime_max) then (
+			player_is_jumping:=0
+			player_jump_current_hangtime:=0
+			if (is_player_on_ground == 0) then (player_is_falling:=1)
+		)
+		
+		if (is_player_on_ground == 1) then (
+			player_jump_current_hangtime:=0
+			player_is_jumping:=0
+			player_is_falling:=0
+		)
+		updatePlayerSlicePosition()
+		wait (debug_slowdown)
+	end
+	
+	subscript, drawEvent, begin
+		# Check image states and change image states.
+	end
+
+	#set script "gameloop" to run in 1 tick again.
+	set timer (timer:gameloop, 1, 1, @gameloop)
+	tickEvent()
+	drawEvent()
+end
+
+
+
+
+
+script, keypress_handler, begin
+	variable (horizontal_key)
+	horizontal_key:= check_horizontal_keypress()
+	if (horizontal_key == 1) then (
+		move slice with wallchecking (player_slice, player_run_speed, 0, 100)
+	)
+	if (horizontal_key == -1) then (		
+		move slice with wallchecking (player_slice, 0--player_run_speed, 0, 100)
+	)
+	if (check_jump_keypress == 1 && player_is_falling == 0 && player_is_jumping == 0 && player_jump_current_hangtime < player_jump_hangtime_max) then (
+			player_is_jumping:=1
+	)
+	check_debug_keys()
+end
+
+script, player_gravity, begin
+	move slice with wallchecking (player_slice, 0, player_fall_speed, 100)
+end
+
+script, is_player_on_ground, begin
+	variable (retval)
+	retval:=check wall collision y(slice x(player_slice), slice y(player_slice), slice width(player_slice), slice height(player_slice), 0, slice height(player_slice))
+	if (retval > 0) then (return (0))
+	if (retval == 0) then (return (1))
+	
+end
+
+script, check_jump_keypress, begin
+	variable (retval)
+	retval:=0
+	if (key is pressed(key:SPACE)) then (
+		retval:=1
+	)
+	return (retval)
+end
+
+script, check_horizontal_keypress, begin
+	variable (retval)
+	retval:= 0
+	if (key is pressed (key:A)) then (
+		retval:= retval -- 1
+	)
+	if (key is pressed (key:D)) then (
+		retval:= retval + 1
+	)
+	return (retval)
+end
+
+script, check_debug_keys, begin
+	if (key is pressed(key:Shift) && key is pressed(key:G)) then (
+		show value (is_player_on_ground)
+	)
+	if (key is pressed(key:Shift) && key is pressed(key:J)) then (
+		show value (player_is_jumping)
+	)
+	if (key is pressed(key:Shift) && key is pressed(key:F)) then (
+		show value (player_is_falling)
+	)
+	if (key is pressed(key:Shift) && key is pressed(key:R)) then (
+		#show value (player_is_)
+	)
+	if (key is pressed(key:Shift) && key is pressed(key:N)) then (
+		show no value 
+	)
+	
+end
+	
+	
+plotscript, defnewgame, begin
+	debug_slowdown:=0
+	init mouse
+	suspend player
+	#start the game loop
+	wait(1)
+	enterNewArea
+	gameloop
+end
