@@ -56,6 +56,9 @@ global variable, begin
 	127,run_anim_last
 	128,run_anim_speed
 	129,player_is_idle
+	130,when_player_jump_should_hang
+	132,player_current_x_speed
+	133,player_velocity
 
 end
 
@@ -68,9 +71,12 @@ plotscript, create_player, begin
 	player_is_running:=0
 	player_run_speed:=8
 	player_jump_speed:=8
+	player_current_x_speed:=0
+	player_velocity:=1
 	player_fall_speed:=10
 	player_jump_hangtime_max:=15
 	player_jump_current_hangtime:=0
+	when_player_jump_should_hang:=player_jump_hangtime_max--6
 	player_is_falling:=0
 	player_is_jumping:=0
 	player_pal_0:=12
@@ -95,14 +101,13 @@ plotscript, create_player, begin
 	run_sprite_5:=22
 	run_sprite_6:=23
 	run_sprite_7:=24
-	
 	player_cur_frame:=0
 	idle_anim_first:=idle_sprite_0
 	idle_anim_last:=idle_sprite_6
-	idle_anim_speed:=4
+	idle_anim_speed:=3
 	run_anim_first:=17
 	run_anim_last:=24
-	run_anim_speed:=4
+	run_anim_speed:=3
 	player_slice:=load sprite (spritetype:large enemy, idle_sprite_0, player_pal_0)
 	set parent(player_slice,lookup slice(sl:walkabout layer))
 end
@@ -120,20 +125,60 @@ script, updateCamera, begin
 	camera follows slice(player_slice)
 end
 
+script, entityJumpMovement, sl,speed,begin
+	move slice with wallchecking (sl, 0, 0--speed,100)
+end
+
+script, entityHorizontalMovement, sl,dir,speed,begin
+	if (dir > 0) then (
+		move slice with wallchecking (sl, dir+speed, 0, 0)
+	)
+	else (
+		move slice with wallchecking (sl, dir--speed, 0, 0)
+	)
+end
+
+script, entityFallMovement, sl, speed, begin
+	move slice with wallchecking (sl, 0, speed, 100)
+end
+
+
+script, is_player_on_slope, begin
+	if (read zone (1, slice x(player_slice)/20, slice y(player_slice)/20+1)) then (
+		return (1)
+	) else (return (0))
+end
 script, updatePlayerState, begin
 	if (player_is_jumping == 1) then (
-		move slice with wallchecking (player_slice, 0, 0--player_jump_speed,100)
-		player_jump_current_hangtime:=player_jump_current_hangtime+1
-		player_is_running:=0
-		player_is_falling:=0
-		player_is_idle:=0
-		# make the player soar higher. 
-
+		if (player_jump_current_hangtime < when_player_jump_should_hang) then (
+			entityJumpMovement(player_slice,player_jump_speed)
+			player_jump_current_hangtime:=player_jump_current_hangtime+1
+			player_is_running:=0
+			player_is_falling:=0
+			player_is_idle:=0
+			# make the player soar higher. 
+		)
+		else (
+			# Float in the air for a sec, but don't go any higher.
+			player_jump_current_hangtime:=player_jump_current_hangtime+1
+			player_is_running:=0
+			player_is_falling:=0
+			player_is_idle:=0
+			
+		)
 	)
+
+	if (check wall collision y (slice screen x(player_slice), slice screen y(player_slice), slice width(player_slice), slice height(player_slice), 0, -1, 0) == 1) then (
+		player_is_jumping:=0
+		player_jump_current_hangtime:=0
+		player_is_falling:=1
+	)
+
 	if (player_jump_current_hangtime == player_jump_hangtime_max) then (
 		player_is_jumping:=0
 		player_jump_current_hangtime:=0
 		# no more jumping for you!
+
 		if (is_player_on_ground == 0) then (
 			player_is_falling:=1
 			player_is_running:=0
@@ -158,7 +203,7 @@ end
 
 script, tickFrameCount, begin
 	framecount:=framecount+1
-	if (framecount>60) then (framecount:=1)
+	if (framecount>2147483640) then (framecount:=1)
 end
 
 script, gameloop, begin
@@ -169,6 +214,7 @@ script, gameloop, begin
 		updatePlayerstate()
 		update_player_gravity()	
 		updateCamera()
+
 		
 	end
 
@@ -208,21 +254,28 @@ script, get_anim_frame,first,last,spd, begin
 	return (retval)
 end
 
+
 script, keypress_handler, begin
 	variable (horizontal_key)
 	variable (idle)
 	horizontal_key:= check_horizontal_keypress()
 	idle:=1
-	if (horizontal_key == 1) then (
-		move slice with wallchecking (player_slice, player_run_speed, 0, 100)
-		player_direction:=1
+	if (horizontal_key > 0 || horizontal_key < 0) then (
+		player_direction:=horizontal_key
+		if (player_is_jumping == 1 || player_is_falling == 1) then (
+			if (framecount,mod,3 == 0) then (   # You can mess with the 'mod 3' here to make standing jumps feel different.
+				player_current_x_speed:=player_current_x_speed+player_velocity
+			)
+		)
+		else (
+			player_current_x_speed:=player_run_speed
+		)
+		if (player_current_x_speed > player_run_speed) then (player_current_x_speed:=player_run_speed)
+		entityHorizontalMovement(player_slice,player_direction,player_current_x_speed)
 		idle:=0
 	)
-	if (horizontal_key == -1) then (		
-		move slice with wallchecking (player_slice, 0--player_run_speed, 0, 100)
-		player_direction:=-1
-		idle:=0
-	)
+
+	
 
 	if (check_jump_keypress == 1 && player_is_falling == 0 && player_is_jumping == 0 && player_jump_current_hangtime < player_jump_hangtime_max) then (
 		player_is_jumping:=1 # I'd like to handle this in player state... but...
@@ -237,13 +290,15 @@ script, keypress_handler, begin
 	)
 	if (idle==1 && player_is_falling == 0 && player_is_jumping == 0 && is_player_on_ground == 1) then (
 		player_is_idle:=1
+		player_current_x_speed:=0
 	) 
 	check_debug_keys()
 end
 
 script, update_player_gravity, begin
 	if (is_player_on_ground == 0 && player_is_jumping == 0 || player_is_falling == 1) then (
-		move slice with wallchecking (player_slice, 0, player_fall_speed, 100)
+		entityFallMovement(player_slice,player_fall_speed)
+		
 	)
 end
 
@@ -258,20 +313,22 @@ end
 script, check_jump_keypress, begin
 	variable (retval)
 	retval:=0
+
 	if (key is pressed(key:SPACE)) then (
 		retval:=1
 	)
+
 	return (retval)
 end
 
 script, check_horizontal_keypress, begin
 	variable (retval)
-	retval:= 0
+	retval:=0
 	if (key is pressed (key:A)) then (
-		retval:= retval -- 1
+			retval:=-1
 	)
 	if (key is pressed (key:D)) then (
-		retval:= retval + 1
+			retval:=1
 	)
 	return (retval)
 end
@@ -312,6 +369,14 @@ script, check_debug_keys, begin
 		show value (player_is_idle)
 		show string (0)
 	)
+	
+	if (key is pressed(key:Shift) && key is pressed(key:Z)) then (
+		$1 = "Zone at position: %d"
+		string sprintf(0, 1, is_player_on_slope())
+		#show value (read zone (1, slice x(sl)/20, slice y(sl)/20+1))
+		show string (0)
+	)
+	
 	if (key is pressed(key:Shift) && key is pressed(key:N)) then (
 		show no value
 	)
