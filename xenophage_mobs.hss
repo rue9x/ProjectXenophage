@@ -19,7 +19,7 @@ script, createMobCollider, sl, begin
   set slice width(sl2,1)
   set slice height(sl2,1)
   set parent(sl2,sl)
-  put slice (sl2, slice width(sl), slice height(sl)/2)
+  put slice (sl2, slice width(sl), slice height(sl)/2+slice height(sl)/4)
   set slice extra(sl2,0,1)
   
   # Bottom middle
@@ -36,7 +36,7 @@ script, createMobCollider, sl, begin
   set slice width(sl2,1)
   set slice height(sl2,1)
   set parent(sl2,sl)
-  put slice (sl2, 0, slice height(sl)/2) 
+  put slice (sl2, 0, slice height(sl)/2+slice height(sl)/4) 
   set slice extra(sl2,0,3)
   
   # Bottom middle, a halfway up a tile (for slopes)
@@ -64,17 +64,22 @@ script, getCollider, sl, dir, begin
 	return (retval)
 end
 
-script, createMob, idle_frame1=0, idle_frame2=0, run_frame1=0, run_frame2=0, jump_frame1=0, jump_frame2=0, pal=0, ani_speed=3, begin
+script, createMob, idle_frame1=0, idle_frame2=0, run_frame1=0, run_frame2=0, jump_frame1=0, jump_frame2=0, fall_frame1=0, fall_frame2=0, pal=0, ani_speed=3, begin
   variable (sl)
   sl:=load sprite (spritetype:large enemy, 0, 0)
   resize extra(sl,ob_size)
   # Set up the animations with what the user supplied first.
   xsetrunanimationfirstframe(sl,run_frame1)
   xsetrunanimationlastframe(sl,run_frame2)
+  
   xsetidleanimationfirstframe(sl,idle_frame1)
-  xsetidleanimationlastframe(sl,run_frame2)
+  xsetidleanimationlastframe(sl,idle_frame2)
+  
   xsetjumpanimationfirstframe(sl,jump_frame1)
   xsetjumpanimationlastframe(sl,jump_frame2)
+
+  xsetfallanimationfirstframe(sl,fall_frame1)
+  xsetfallanimationlastframe(sl,fall_frame2)
   xsetimagepalettenumber(sl,pal)
   xsetanimationspeed(sl,ani_speed)
 
@@ -82,7 +87,12 @@ script, createMob, idle_frame1=0, idle_frame2=0, run_frame1=0, run_frame2=0, jum
   # Note, these shouldn't be messed with unless you
   # really know what you're doing.
   xsetCurrentFrame(sl,0)
-  xisidle(sl,1)
+  xsetidle(sl,1)
+  xsetjumping(sl,0)
+  xsetfalling(sl,0)
+  xsetshooting(sl,0)
+  xsetcrouching(sl,0)
+ 
   xsetCurrentDirection(sl,1)
   xsetcurrentjumphangtime(sl,0)
   xsetcurrenthorizontalspeed(sl,0)
@@ -105,7 +115,7 @@ end
 
 script, create_player, begin
 	# This is where we can create the player slice and do whatever changes we need to do to it before returning it.
-	player_slice:=createmob(9,15,17,24,24,30,12,3)
+	player_slice:=createmob(9,16,17,24,25,30,22,22,12,3)
 end
 
 script, initiateMobs, begin
