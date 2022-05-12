@@ -4,201 +4,25 @@
 # Without further ado.. [Spazman -- 5/1/2021]
 # Rue starting on 2/19/2022
 
-define constant, begin
-	#lookup constants
-	#timer constants
-	0, timer:gameloop
+include, xenophage_arrays.hss
+include, xenophage_mobs.hss
+include, xenophage_globals.hss
+
+script, zoneatpixel, x, y, count=0, begin
+	return(zone at spot(x/20, y/20, count))
 end
 
-global variable, begin
-	0, game:state
-	1, player_slice
-	2, player_sprite_height
-	3, player_sprite_width
-	4, player_run_speed
-	5, player_fall_speed
-	6, player_jump_speed
-	7, player_is_jumping
-	8, player_is_falling
-	9, player_jump_current_hangtime
-	10, player_jump_hangtime_max
-	11, debug_slowdown
-	12, framecount
-	13, player_cur_frame
-	14, player_direction
-	100,player_pal_0
-	101,player_pal_1
-	102,player_pal_2
-	103,player_pal_3
-	104,player_pal_4
-	105,player_pal_5
-	106,player_pal_6
-	107,idle_sprite_0
-	108,idle_sprite_1
-	109,idle_sprite_2
-	110,idle_sprite_3
-	111,idle_sprite_4
-	112,idle_sprite_5
-	113,idle_sprite_6
-	114,idle_anim_first
-	115,idle_anim_last
-	116,idle_anim_speed
-	117,player_is_running
-	118,run_sprite_0
-	119,run_sprite_1
-	120,run_sprite_2
-	121,run_sprite_3
-	122,run_sprite_4
-	123,run_sprite_5
-	124,run_sprite_6
-	125,run_sprite_7
-	126,run_anim_first
-	127,run_anim_last
-	128,run_anim_speed
-	129,player_is_idle
-	130,when_player_jump_should_hang
-	132,player_current_x_speed
-	133,player_velocity
-
+script, wall at pixel, x, y, begin
+    x := x / 20
+    y := y / 20
+    if (read pass block (x, y)) then (
+    	return (true)
+    )
+    else (
+    	return (false)
+    )
 end
 
-
-plotscript, create_player, begin
-	player_sprite_width:=36 # Global for use later
-	player_sprite_height:=37 # Global for use later
-	player_direction:=1
-	player_is_idle:=1
-	player_is_running:=0
-	player_run_speed:=8
-	player_jump_speed:=8
-	player_current_x_speed:=0
-	player_velocity:=1
-	player_fall_speed:=10
-	player_jump_hangtime_max:=15
-	player_jump_current_hangtime:=0
-	when_player_jump_should_hang:=player_jump_hangtime_max--6
-	player_is_falling:=0
-	player_is_jumping:=0
-	player_pal_0:=12
-	player_pal_1:=12
-	player_pal_2:=12
-	player_pal_3:=12
-	player_pal_4:=12
-	player_pal_5:=12
-	player_pal_6:=12
-	idle_sprite_0:=9
-	idle_sprite_1:=10
-	idle_sprite_2:=11
-	idle_sprite_3:=12
-	idle_sprite_4:=13
-	idle_sprite_5:=14
-	idle_sprite_6:=15
-	run_sprite_0:=17
-	run_sprite_1:=18
-	run_sprite_2:=19
-	run_sprite_3:=20
-	run_sprite_4:=21
-	run_sprite_5:=22
-	run_sprite_6:=23
-	run_sprite_7:=24
-	player_cur_frame:=0
-	idle_anim_first:=idle_sprite_0
-	idle_anim_last:=idle_sprite_6
-	idle_anim_speed:=3
-	run_anim_first:=17
-	run_anim_last:=24
-	run_anim_speed:=3
-	player_slice:=load sprite (spritetype:large enemy, idle_sprite_0, player_pal_0)
-	set parent(player_slice,lookup slice(sl:walkabout layer))
-end
-
-
-plotscript, enterNewArea, begin
-	create_player()
-	set slice x(player_slice,hero pixel x(me))
-	set slice y(player_slice,hero pixel y(me))
-
-end
-
-
-script, updateCamera, begin
-	camera follows slice(player_slice)
-end
-
-script, entityJumpMovement, sl,speed,begin
-	move slice with wallchecking (sl, 0, 0--speed,100)
-end
-
-script, entityHorizontalMovement, sl,dir,speed,begin
-	if (dir > 0) then (
-		move slice with wallchecking (sl, dir+speed, 0, 0)
-	)
-	else (
-		move slice with wallchecking (sl, dir--speed, 0, 0)
-	)
-end
-
-script, entityFallMovement, sl, speed, begin
-	move slice with wallchecking (sl, 0, speed, 100)
-end
-
-
-script, is_player_on_slope, begin
-	if (read zone (1, slice x(player_slice)/20, slice y(player_slice)/20+1)) then (
-		return (1)
-	) else (return (0))
-end
-script, updatePlayerState, begin
-	if (player_is_jumping == 1) then (
-		if (player_jump_current_hangtime < when_player_jump_should_hang) then (
-			entityJumpMovement(player_slice,player_jump_speed)
-			player_jump_current_hangtime:=player_jump_current_hangtime+1
-			player_is_running:=0
-			player_is_falling:=0
-			player_is_idle:=0
-			# make the player soar higher. 
-		)
-		else (
-			# Float in the air for a sec, but don't go any higher.
-			player_jump_current_hangtime:=player_jump_current_hangtime+1
-			player_is_running:=0
-			player_is_falling:=0
-			player_is_idle:=0
-			
-		)
-	)
-
-	if (check wall collision y (slice screen x(player_slice), slice screen y(player_slice), slice width(player_slice), slice height(player_slice), 0, -1, 0) == 1) then (
-		player_is_jumping:=0
-		player_jump_current_hangtime:=0
-		player_is_falling:=1
-	)
-
-	if (player_jump_current_hangtime == player_jump_hangtime_max) then (
-		player_is_jumping:=0
-		player_jump_current_hangtime:=0
-		# no more jumping for you!
-
-		if (is_player_on_ground == 0) then (
-			player_is_falling:=1
-			player_is_running:=0
-			player_is_idle:=0
-			# can't be running or idle if you're falling.
-		)
-	)
-	
-	if (is_player_on_ground == 1) then (
-		player_jump_current_hangtime:=0
-		player_is_jumping:=0
-		player_is_falling:=0
-		# could still be running or idle.
-		if (player_is_running == 0) then (
-			player_is_idle:=1
-		)
-	)
-
-
-end
 
 
 script, tickFrameCount, begin
@@ -206,46 +30,68 @@ script, tickFrameCount, begin
 	if (framecount>2147483640) then (framecount:=1)
 end
 
+
+script, updateCamera, begin
+	wait for camera
+	camera follows slice(player_slice)
+
+end
 script, gameloop, begin
 	subscript, tickEvent, begin
 		# Check inputs and key changes.
 		# Check and change object states.
-		keypress_handler()
-		updatePlayerstate()
-		update_player_gravity()	
 		updateCamera()
-
+		check_keys()
+		check_debug_keys()
+		fallPlayer()
+		handlePlayerJump()
+		prepPlayerAnimations()
+		if (xgetcurrentdirection(player_slice)==3) then (horiz flip sprite(player_slice,true))
+		if (xgetcurrentdirection(player_slice)==1) then (horiz flip sprite(player_slice,false))
 		
 	end
-
 
 	subscript, drawEvent, begin
 		# Check image states and change image states.
 		tickFrameCount()
-		if (player_direction == -1) then (
-			horiz flip sprite (player_slice, true)
-		)
-		if (player_direction == 1) then (
-			horiz flip sprite (player_slice, false)
-		)
-
-		if (player_is_idle == 1) then (
-			replace sprite (player_slice, spritetype: large enemy, get_anim_frame(idle_anim_first,idle_anim_last,idle_anim_speed), player_pal_0)
-		)
-		if (player_is_running == 1) then (
-			replace sprite (player_slice, spritetype: large enemy, get_anim_frame(run_anim_first,run_anim_last,run_anim_speed), player_pal_0)
-		)
+		replace sprite(player_slice,sprite type:large enemy, get_anim_frame(xgetanimationfirstframe(player_slice),xgetanimationlastframe(player_slice),xgetanimationspeed(player_slice)))
 	end
 
-
-
 	#set script "gameloop" to run in 1 tick again.
-	wait (debug_slowdown)
-	set timer (timer:gameloop, 1, 1, @gameloop)
+	set timer (timer:gameloop, 1, debug_slowdown, @gameloop)
+
 	tickEvent()
 	drawEvent()
 end
 
+script, prepPlayerAnimations, begin
+	if (xisidle(player_slice) == true) then (
+		xsetanimationfirstframe(player_slice,xgetidleanimationfirstframe(player_slice))
+		xsetanimationlastframe(player_slice,xgetidleanimationlastframe(player_slice))
+	)
+	if (xisrunning(player_slice) == true) then (
+		xsetanimationfirstframe(player_slice,xgetrunanimationfirstframe(player_slice))
+		xsetanimationlastframe(player_slice,xgetrunanimationlastframe(player_slice))
+	)
+	if (xisjumping(player_slice) == 1) then (
+		xsetanimationfirstframe(player_slice,xgetjumpanimationfirstframe(player_slice))
+		xsetanimationlastframe(player_slice,xgetjumpanimationlastframe(player_slice))
+	)
+	if (xisfalling(player_slice) == 1) then (
+		xsetanimationfirstframe(player_slice,xgetfallanimationfirstframe(player_slice))
+		xsetanimationlastframe(player_slice,xgetfallanimationlastframe(player_slice))
+	)
+	
+	
+	
+end
+script, placeplayerathero, begin
+	# TODO: Remove this. This is a terrible system.
+	# Let's go back to having the hero just be a spawn point.
+	# Currently this is very janky and makes the player slice bounce around all weird.
+	put slice(player_slice,hero pixel x(me),hero pixel y(me))
+	
+end
 script, get_anim_frame,first,last,spd, begin
 	variable (retval, cell_num)
 	retval:=framecount / spd
@@ -254,126 +100,249 @@ script, get_anim_frame,first,last,spd, begin
 	return (retval)
 end
 
+script, check_keys, begin
+	if (key is pressed(key:A)) then (
+		# try to move left
+		movePlayer(left)
+	)
+	else if (key is pressed(key:D)) then (
+		# try to move right
+		movePlayer(right)
+	)
+	else (
+		if (xisrunning(player_slice) == 1) then (
+			xsetrunning(player_slice,0)
+		)
+	)
+	if (key is pressed(key:Space)) then (
+		# try to jump
+			launchPlayerJump()
+				
+	)
+end
 
-script, keypress_handler, begin
-	variable (horizontal_key)
-	variable (idle)
-	horizontal_key:= check_horizontal_keypress()
-	idle:=1
-	if (horizontal_key > 0 || horizontal_key < 0) then (
-		player_direction:=horizontal_key
-		if (player_is_jumping == 1 || player_is_falling == 1) then (
-			if (framecount,mod,3 == 0) then (   # You can mess with the 'mod 3' here to make standing jumps feel different.
-				player_current_x_speed:=player_current_x_speed+player_velocity
+script, sliceisoncollision,sl, useparent=false,begin
+	if (useparent==true) then (
+		return (wallatpixel(slice x(sl)+slice x(slice parent(sl)),slice y(sl)+slice y(slice parent(sl))))
+	)
+	else (
+		return (wallatpixel(slice x(sl),slice y(sl)))
+	)
+end
+
+script, sliceisonslope,sl, useparent=false,begin
+	variable (retval)
+	if (useparent==true) then (
+		retval:=zoneatpixel(slice x(sl)+slice x(slice parent(sl)),slice y(sl)+slice y(slice parent(sl)))
+	)
+	else (
+		retval:=zoneatpixel(slice x(sl),slice y(sl))
+	)
+	if (retval==2) then (
+		return (true)
+	)
+	else (
+		return (false)
+	)
+end
+
+
+script, launchPlayerJump, begin
+	# This just checks to see if you _can_ jump, and then puts you in jumping mode.
+	variable (grounded)
+	variable (onslope)
+	grounded:=sliceisoncollision(getCollider(player_slice,down),true)
+	onslope:=sliceisonslope(getCollider(player_slice,4),true)
+
+	if (grounded==true || onslope==true) then (
+		if (xisjumping(player_slice) == 0 && xisfalling(player_slice) == 0) then (
+			xsetcurrentjumphangtime(player_slice,0)
+			xsetjumping(player_slice,1)
+			xsetfalling(player_slice,0)
 			)
+	)
+end
+
+script, handlePlayerJump, begin
+	variable (headbonk)
+
+		if (xisJumping(player_slice) == 1 && xisfalling(player_slice) == 0) then (
+		
+			headbonk:=sliceisoncollision(getCollider(player_slice,up),true)
+		
+			if (xgetcurrentjumphangtime(player_slice) < xgetmaxjumphangtime(player_slice)) then (
+				put slice(player_slice,slice x(player_slice) slice y(player_slice)--xgetjumpspeed(player_slice))
+			)
+
+
+			if (xgetcurrentjumphangtime(player_slice) >= xgetmaxjumphangtime(player_slice)) then (
+
+				xsetjumping(player_slice,0)
+				xsetfalling(player_slice,1)
+			)
+
+			if (headbonk == True) then (
+				xsetjumping(player_slice,0)
+				xsetfalling(player_slice,1)
+			)
+			xsetcurrentjumphangtime(player_slice,xgetcurrentjumphangtime(player_slice)+1)
+		)
+end
+
+script, fallPlayer, begin
+	variable (grounded)
+	variable (onslope)
+	variable (lowslope)
+	variable (backslope)
+	
+	if (xisjumping(player_slice) == 0) then (
+		grounded:=sliceisoncollision(getCollider(player_slice,down),true)
+		onslope:=sliceisonslope(getCollider(player_slice,4),true)
+		lowslope:=sliceisonslope(getCollider(player_slice,down),true)
+		if (xgetcurrentdirection(player_slice) == 1) then (backslope:=sliceisonslope(getCollider(player_slice,left),true))
+		if (xgetcurrentdirection(player_slice) == 3) then (backslope:=sliceisonslope(getCollider(player_slice,right),true))
+
+		lowslope:=sliceisonslope(getCollider(player_slice,down),true)
+		
+		if (grounded == false && onslope == false) then (
+				put slice(player_slice,slice x(player_slice),slice y(player_slice)+xgetfallspeed(player_slice))
+				
+				if (lowslope == true || backslope == true) then (xsetfalling(player_slice,0))
+				if (lowslope == false && backslope == false) then (xsetfalling(player_slice,1))
+						
 		)
 		else (
-			player_current_x_speed:=player_run_speed
+			xsetfalling(player_slice,0)
 		)
-		if (player_current_x_speed > player_run_speed) then (player_current_x_speed:=player_run_speed)
-		entityHorizontalMovement(player_slice,player_direction,player_current_x_speed)
-		idle:=0
+	)
+end
+
+script, movePlayer, dir, amount=4,begin
+ 	variable (leftCollider)
+	variable (rightCollider)
+ 	variable (upCollider)
+ 	variable (downCollider)
+ 	variable (ymod)
+ 	leftCollider:=getCollider(player_slice,left)
+	rightCollider:=getCollider(player_slice,right)
+	upCollider:=getCollider(player_slice,up)
+ 	downCollider:=getCollider(player_slice,down)
+
+ 	ymod:=0
+	xsetcurrentdirection(player_slice,dir)
+ 	ymod:=checkSlopes()
+ 	put slice(player_slice,slice x(player_slice), slice y(player_slice)+ymod)
+ 	if (dir == left) then(
+		if (sliceisoncollision(leftCollider,true) == false) then (
+			put slice(player_slice,slice x(player_slice)--amount, slice y(player_slice))
+			xsetrunning(player_slice,1)
+		)
 	)
 
+	if (dir == right) then(
+		if (sliceisoncollision(rightCollider,true) == false) then (
+			put slice(player_slice,slice x(player_slice)+amount, slice y(player_slice))
+			xsetrunning(player_slice,1)
+		)
+	)
+end
+
+script, checkSlopes, begin
+	# It aint clean, it aint perfect, but here's some slopes.
+ 	variable (leftCollider)
+ 	variable (rightCollider)
+ 	variable (upCollider)
+ 	variable (downCollider)
+ 	variable (slopeCollider)
+ 	variable (zonecheck)
+ 	
+ 	leftCollider:=getCollider(player_slice,left)
+	rightCollider:=getCollider(player_slice,right)
+	upCollider:=getCollider(player_slice,up)
+ 	downCollider:=getCollider(player_slice,down)
+ 	slopeCollider:=getCollider(player_slice,4)
 	
+	if (sliceisonslope(slopeCollider,true) == true) then (
+		if (xgetcurrentdirection(player_slice) == 1) then (
+			if (sliceisoncollision(rightCollider,true) == true) then (
+				return (0--slopeoffset)
+				break
+			)
+			if (sliceisoncollision(rightCollider,true) == false) then (
+				return (0--slopeoffset)
+				break
+			)
+			if (sliceisoncollision(downCollider,true) == true) then (
+				return (slopeoffset)
+				break
+			)
+			if (sliceisoncollision(downCollider,true) == false) then (
+				return (slopeoffset)
+				break
+			)
 
-	if (check_jump_keypress == 1 && player_is_falling == 0 && player_is_jumping == 0 && player_jump_current_hangtime < player_jump_hangtime_max) then (
-		player_is_jumping:=1 # I'd like to handle this in player state... but...
-		idle:=0
-	)
-	if (horizontal_key <> 0 && player_is_jumping == 0 && is_player_on_ground == 1) then (
-		player_is_running:=1 # I'd like to handle this in the player state, but... :(
-		idle:=0
-	)
-	if (horizontal_key == 0) then (
-		player_is_running:=0 # Doesn't matter if you're in the air or not. You're not running if you're not pressing a button.
-	)
-	if (idle==1 && player_is_falling == 0 && player_is_jumping == 0 && is_player_on_ground == 1) then (
-		player_is_idle:=1
-		player_current_x_speed:=0
-	) 
-	check_debug_keys()
+		)
+		if (xgetcurrentdirection(player_slice) == 3) then (
+			if (sliceisoncollision(leftCollider,true) == true) then (
+				return (0--slopeoffset)
+				break
+			)
+			if (sliceisoncollision(leftCollider,true) == false) then (
+				return (0--slopeoffset)
+				break
+			)
+			if (sliceisoncollision(downCollider,true) == true) then (
+				return (slopeoffset)
+				break
+			)
+			if (sliceisoncollision(downCollider,true) == false) then (
+				return (slopeoffset)
+				break
+			)
+
+		)
+	)	
 end
-
-script, update_player_gravity, begin
-	if (is_player_on_ground == 0 && player_is_jumping == 0 || player_is_falling == 1) then (
-		entityFallMovement(player_slice,player_fall_speed)
-		
-	)
-end
-
-script, is_player_on_ground, begin
-	variable (retval)
-	retval:=check wall collision y(slice x(player_slice), slice y(player_slice), slice width(player_slice), slice height(player_slice), 0, slice height(player_slice))
-	if (retval > 0) then (return (0))
-	if (retval == 0) then (return (1))
-	
-end
-
-script, check_jump_keypress, begin
-	variable (retval)
-	retval:=0
-
-	if (key is pressed(key:SPACE)) then (
-		retval:=1
-	)
-
-	return (retval)
-end
-
-script, check_horizontal_keypress, begin
-	variable (retval)
-	retval:=0
-	if (key is pressed (key:A)) then (
-			retval:=-1
-	)
-	if (key is pressed (key:D)) then (
-			retval:=1
-	)
-	return (retval)
-end
-
 script, check_debug_keys, begin
-
+	if (key is pressed(key:Esc)) then (
+		game over
+	)
 	if (key is pressed(key:Shift) && key is pressed(key:A)) then (
 		$1 = "Animation Frame: %d"
-		string sprintf(0, 1, get_anim_frame(idle_anim_first,idle_anim_last,idle_anim_speed))
+		string sprintf(0, 1, get_anim_frame(xgetanimationfirstframe(player_slice),xgetanimationlastframe(player_slice),xgetanimationspeed(player_slice)))
 		show string (0)
 	)
 
-	if (key is pressed(key:Shift) && key is pressed(key:G)) then (
+	  if (key is pressed(key:Shift) && key is pressed(key:G)) then (
 		$1 = "Player is on ground: %d"
-		string sprintf(0, 1, is_player_on_ground)
-		show string (0)
-	)
+		string sprintf(0, 1, sliceisoncollision(getCollider(player_slice,down),true))
+    	show string (0)
+	 )
 	if (key is pressed(key:Shift) && key is pressed(key:J)) then (
 		$1 = "Player is jumping: %d"
-		string sprintf(0, 1, player_is_jumping)
+		string sprintf(0, 1, xisjumping(player_slice))
 		show string (0)
 	)
 	if (key is pressed(key:Shift) && key is pressed(key:F)) then (
 		$1 = "Player is falling: %d"
-		string sprintf(0, 1, player_is_falling)
+		string sprintf(0, 1, xisjumping(player_slice))
 		show string (0)
 	)
 	if (key is pressed(key:Shift) && key is pressed(key:R)) then (
 		$1 = "Player is running: %d"
-		string sprintf(0, 1, player_is_running)
-		show value (player_is_running)
+		string sprintf(0, 1, xisrunning(player_slice))
 		show string (0)
 	)
 
 	if (key is pressed(key:Shift) && key is pressed(key:I)) then (
 		$1 = "Player is idle: %d"
-		string sprintf(0, 1, player_is_idle)
-		show value (player_is_idle)
+		string sprintf(0, 1, xisidle(player_slice))
+
 		show string (0)
 	)
 	
 	if (key is pressed(key:Shift) && key is pressed(key:Z)) then (
 		$1 = "Zone at position: %d"
-		string sprintf(0, 1, is_player_on_slope())
-		#show value (read zone (1, slice x(sl)/20, slice y(sl)/20+1))
 		show string (0)
 	)
 	
@@ -383,6 +352,7 @@ script, check_debug_keys, begin
 	if (new keypress(key:Left Bracket)) then (
 		$1 = "Debug slowdown decreased: %d"
 		debug_slowdown:=debug_slowdown--1 
+		if (debug_slowdown < 1) then (debug_slowdown:=1)
 		string sprintf(0, 1, debug_slowdown)
 		show string (0)
 	)
@@ -392,17 +362,22 @@ script, check_debug_keys, begin
 		string sprintf(0, 1, debug_slowdown)
 		show string (0)
 	)
-	
+
 end
-	
-	
+
 plotscript, defnewgame, begin
-	debug_slowdown:=0
+	gameloaded:=0
+	ob_size:=setupArrayDefinitions()
+	initiateMobs()
+	debug_slowdown:=1
 	framecount:=1
 	init mouse
 	suspend player
 	#start the game loop
+	slopeoffset:=8
 	wait(1)
-	enterNewArea
-	gameloop
+	create_player() # this actually sets player_slice
+	createMobCollider(player_slice)
+	placeplayerathero()
+	gameloop()
 end

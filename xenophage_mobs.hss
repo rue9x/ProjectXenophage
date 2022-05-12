@@ -1,0 +1,127 @@
+# This file is intended to hold mostly things involving the mob system.
+# Creating them, manipulating them, getting data from them, etc.
+
+include, xenophage_arrays.hss
+
+script, createMobCollider, sl, begin
+  # This puts an invisible 1 pixel collider at the bottom center of the mob.
+  variable (sl2)
+  # Top middle
+  sl2:=create rect (1, 1, -1)
+  set slice width(sl2,1)
+  set slice height(sl2,1)
+  set parent(sl2,sl)
+  put slice (sl2, slice width(sl)/2, 0)
+  set slice extra(sl2,0,0)
+
+  # Right side middle
+  sl2:=create rect (1, 1, -1)
+  set slice width(sl2,1)
+  set slice height(sl2,1)
+  set parent(sl2,sl)
+  put slice (sl2, slice width(sl), slice height(sl)/2+slice height(sl)/4)
+  set slice extra(sl2,0,1)
+  
+  # Bottom middle
+  sl2:=create rect (1, 1, -1)
+  set slice width(sl2,1)
+  set slice height(sl2,1)
+  set parent(sl2,sl)
+  put slice (sl2, slice width(sl)/2, slice height(sl))
+  set slice extra(sl2,0,2)
+  
+
+  # Left side middle
+  sl2:=create rect (1, 1, -1)
+  set slice width(sl2,1)
+  set slice height(sl2,1)
+  set parent(sl2,sl)
+  put slice (sl2, 0, slice height(sl)/2+slice height(sl)/4) 
+  set slice extra(sl2,0,3)
+  
+  # Bottom middle, a halfway up a tile (for slopes)
+  sl2:=create rect (1, 1, -1)
+  set slice width(sl2,1)
+  set slice height(sl2,1)
+  set parent(sl2,sl)
+  put slice (sl2, slice width(sl)/2, slice height(sl)--10)
+  set slice extra(sl2,0,4)
+  
+
+  return (sl2)
+end
+
+script, getCollider, sl, dir, begin
+	variable (slLoop)
+	variable (retVal)
+	variable (i)
+	variable(potential_candidate)
+	retval:=-1
+	for (i,0,4) do (
+		potential_candidate:=slice child(sl,i)
+		if (get slice extra(potential_candidate,0) == dir) then (retval:=potential_candidate)
+	)
+	return (retval)
+end
+
+script, createMob, idle_frame1=0, idle_frame2=0, run_frame1=0, run_frame2=0, jump_frame1=0, jump_frame2=0, fall_frame1=0, fall_frame2=0, pal=0, ani_speed=3, begin
+  variable (sl)
+  sl:=load sprite (spritetype:large enemy, 0, 0)
+  resize extra(sl,ob_size)
+  # Set up the animations with what the user supplied first.
+  xsetrunanimationfirstframe(sl,run_frame1)
+  xsetrunanimationlastframe(sl,run_frame2)
+  
+  xsetidleanimationfirstframe(sl,idle_frame1)
+  xsetidleanimationlastframe(sl,idle_frame2)
+  
+  xsetjumpanimationfirstframe(sl,jump_frame1)
+  xsetjumpanimationlastframe(sl,jump_frame2)
+
+  xsetfallanimationfirstframe(sl,fall_frame1)
+  xsetfallanimationlastframe(sl,fall_frame2)
+  xsetimagepalettenumber(sl,pal)
+  xsetanimationspeed(sl,ani_speed)
+
+  # These are internals. Default them to normal things.
+  # Note, these shouldn't be messed with unless you
+  # really know what you're doing.
+  xsetCurrentFrame(sl,0)
+  xsetidle(sl,1)
+  xsetjumping(sl,0)
+  xsetfalling(sl,0)
+  xsetshooting(sl,0)
+  xsetcrouching(sl,0)
+ 
+  xsetCurrentDirection(sl,1)
+  xsetcurrentjumphangtime(sl,0)
+  xsetcurrenthorizontalspeed(sl,0)
+  xsetCurrentVelocity(sl,3) # how fast the player moves
+  set parent(sl,lookup slice(sl:walkabout layer))
+
+  # These are some default values that can be played with.
+  # Feel free to call the appropriate xset values later to modify these.
+  xsetrunspeed(sl,8) # How fast the player stops moving.
+  xsetjumpspeed(sl,8)
+  xsetfallspeed(sl,10)
+  xsetmaxjumphangtime(sl,15)
+  xsethangtimetiming(sl,9)
+
+  # Finally, we create the slice (which will autosize it), and return the handle.
+  replace sprite (sl, spritetype:large enemy, xgetIdleanimationfirstframe(sl), xgetimagepalettenumber(sl))
+  append extra (mobhandler, sl) # Adds a new mob to the mob handler.
+  return (sl)
+end
+
+script, create_player, begin
+	# This is where we can create the player slice and do whatever changes we need to do to it before returning it.
+	player_slice:=createmob(9,16,17,24,25,30,22,22,12,3)
+end
+
+script, initiateMobs, begin
+  # This thing is a mob that keeps track of all of the mobs on the map.
+  # The player is (usually) the first thing that's created.
+  # All of the slice numbers for every mob created get added into the NPC extra of
+  # this NPC for easy retrieval later.
+  mobhandler:=create global NPC (0, 0, 0, south)
+end

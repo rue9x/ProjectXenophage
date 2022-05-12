@@ -1,0 +1,368 @@
+global variable (7000,nsetRunSpeed)
+global variable (7001,nsetFallSpeed)
+global variable (7002,nsetJumpSpeed)
+global variable (7003,nsetShootSpeed)
+global variable (7004,nsetCurrentDirection)
+global variable (7005,nsetCurrentHorizontalSpeed)
+global variable (7006,nsetCurrentVelocity)
+global variable (7007,nsetMaxJumpHangtime)
+global variable (7008,nsetCurrentJumpHangtime)
+global variable (7009,nsetHangtimeTiming)
+global variable (7010,nsetActionState)
+global variable (7011,nsetAnimationFirstFrame)
+global variable (7012,nsetAnimationLastFrame)
+global variable (7013,nsetRunAnimationFirstFrame)
+global variable (7014,nsetRunAnimationLastFrame)
+global variable (7015,nsetJumpAnimationFirstFrame)
+global variable (7016,nsetJumpAnimationLastFrame)
+global variable (7017,nsetIdleAnimationFirstFrame)
+global variable (7018,nsetIdleAnimationLastFrame)
+global variable (7019,nsetShootAnimationFirstFrame)
+global variable (7020,nsetShootAnimationLastFrame)
+global variable (7021,nsetCrouchAnimationFirstFrame)
+global variable (7022,nsetCrouchAnimationLastFrame)
+global variable (7023,nsetCurrentFrame)
+global variable (7024,nsetAnimationSpeed)
+global variable (7025,nsetImagePaletteNumber)
+global variable (7026,nisidle)
+global variable (7027,nisrunning)
+global variable (7028,nisjumping)
+global variable (7029,nisfalling)
+global variable (7030,niscrouching)
+global variable (7031,nisshooting)
+global variable (7032,nsetFallAnimationFirstFrame)
+global variable (7033,nsetFallAnimationLastFrame)
+plotscript, setupArrayDefinitions, begin
+	# This should be called one time ever, at the beginning of the game.
+	# It's used so the array functions know what slot belongs to what value.
+	nsetRunSpeed:=					0
+	nsetFallSpeed:=					1
+	nsetJumpSpeed:=					2
+	nsetShootSpeed:=				3
+	nsetCurrentDirection:=			4
+	nsetCurrentHorizontalSpeed:=	5
+	nsetCurrentVelocity:=			6
+	nsetMaxJumpHangtime:=			7
+	nsetCurrentJumpHangtime:=		8
+	nsetHangtimeTiming:=			9
+	nsetActionState:=				10
+	nsetAnimationFirstFrame:=		11
+	nsetAnimationLastFrame:=		12
+	nsetRunAnimationFirstFrame:=	13
+	nsetRunAnimationLastFrame:=		14
+	nsetJumpAnimationFirstFrame:=	15
+	nsetJumpAnimationLastFrame:=	16
+	nsetIdleAnimationFirstFrame:=	17
+	nsetIdleAnimationLastFrame:=	18
+	nsetShootAnimationFirstFrame:=	19
+	nsetShootAnimationLastFrame:=	20
+	nsetCrouchAnimationFirstFrame:=	21
+	nsetCrouchAnimationLastFrame:=	22
+	nsetFallAnimationFirstFrame:=	23
+	nsetFallAnimationLastFrame:=	24
+	nsetCurrentFrame:=				25
+	nsetAnimationSpeed:=			26
+	nsetImagePaletteNumber:=		27
+	nisidle:=						28
+	nisrunning:=					29
+	nisjumping:=					30
+	nisfalling:=					31
+	niscrouching:=					32
+	nisshooting:=					33
+	return(34) # Always return the final value! Update this!
+end
+
+plotscript, xsetRunSpeed,sl,x,begin
+	set extra(sl,nsetRunSpeed,x)
+end
+
+plotscript, xsetFallSpeed,sl,x,begin
+	set extra(sl,nsetFallSpeed,x)
+end
+
+plotscript, xsetJumpSpeed,sl,x,begin
+	set extra(sl,nsetJumpSpeed,x)
+end
+
+plotscript, xsetShootSpeed,sl,x,begin
+	set extra(sl,nsetshootspeed,x)
+end
+
+plotscript, xsetCurrentDirection,sl,x,begin
+	set extra(sl,nsetCurrentDirection,x)
+end
+
+plotscript, xsetCurrentHorizontalSpeed,sl,x,begin
+	set extra(sl,nsetCurrentHorizontalSpeed,x)
+end
+
+plotscript, xsetCurrentVelocity,sl,x,begin
+	set extra(sl,nsetCurrentVelocity,x)
+end
+
+plotscript, xsetMaxJumpHangtime,sl,x,begin
+	set extra(sl,nsetMaxJumpHangtime,x)
+end
+
+plotscript, xsetCurrentJumpHangtime,sl,x,begin
+	set extra(sl,nsetCurrentJumpHangtime,x)
+end
+
+plotscript, xsetHangtimeTiming,sl,x,begin
+	set extra(sl,nsetHangtimeTiming,x)
+end
+
+plotscript, xsetActionState,sl,x,begin
+	set extra(sl,nsetActionState,x)
+end
+
+plotscript, xsetAnimationFirstFrame,sl,x,begin
+	set extra(sl,nsetAnimationFirstFrame,x)
+end
+
+plotscript, xsetAnimationLastFrame,sl,x,begin
+	set extra(sl,nsetAnimationLastFrame,x)
+end
+
+plotscript, xsetRunAnimationFirstFrame,sl,x,begin
+	set extra(sl,nsetRunAnimationFirstFrame,x)
+end
+
+plotscript, xsetRunAnimationLastFrame,sl,x,begin
+	set extra(sl,nsetRunAnimationLastFrame,x)
+end
+
+plotscript, xsetIdleAnimationFirstFrame,sl,x,begin
+	set extra(sl,nsetIdleAnimationFirstFrame,x)
+end
+
+plotscript, xsetIdleAnimationLastFrame,sl,x,begin
+	set extra(sl,nsetIdleAnimationLastFrame,x)
+end
+plotscript, xsetJumpAnimationFirstFrame,sl,x,begin
+	set extra(sl,nsetJumpAnimationFirstFrame,x)
+end
+
+plotscript, xsetJumpAnimationLastFrame,sl,x,begin
+	set extra(sl,nsetJumpAnimationLastFrame,x)
+end
+
+plotscript, xsetFallAnimationFirstFrame,sl,x,begin
+	set extra(sl,nsetFallAnimationFirstFrame,x)
+end
+
+plotscript, xsetFallAnimationLastFrame,sl,x,begin
+	set extra(sl,nsetFallAnimationLastFrame,x)
+end
+
+plotscript, xsetCrouchAnimationFirstFrame,sl,x,begin
+	set extra(sl,nsetCrouchAnimationFirstFrame,x)
+end
+
+plotscript, xsetCrouchAnimationLastFrame,sl,x,begin
+	set extra(sl,nsetCrouchAnimationLastFrame,x)
+end
+
+plotscript, xsetShootAnimationFirstFrame,sl,x,begin
+	set extra(sl,nsetShootAnimationFirstFrame,x)
+end
+
+plotscript, xsetShootAnimationLastFrame,sl,x,begin
+	set extra(sl,nsetShootAnimationLastFrame,x)
+end
+
+plotscript, xsetCurrentFrame,sl,x,begin
+	set extra(sl,nsetCurrentFrame,x)
+end
+
+plotscript, xsetAnimationSpeed,sl,x,begin
+	set extra(sl,nsetAnimationSpeed,x)
+end
+
+plotscript, xsetImagePaletteNumber,sl,x,begin
+	set extra(sl,nsetImagePaletteNumber,x)
+end
+
+
+
+
+
+
+
+
+
+
+plotscript, xgetRunSpeed,sl,begin
+	return (get extra(sl,nsetRunSpeed))
+end
+
+plotscript, xgetFallSpeed,sl,begin
+	return (get extra(sl,nsetFallSpeed))
+end
+
+plotscript, xgetJumpSpeed,sl,begin
+	return (get extra(sl,nsetJumpSpeed))
+end
+
+plotscript, xgetShootSpeed,sl,begin
+	return (get extra(sl,nsetshootspeed))
+end
+
+plotscript, xgetCurrentDirection,sl,begin
+	return (get extra(sl,nsetCurrentDirection))
+end
+
+plotscript, xgetCurrentHorizontalSpeed,sl,begin
+	return (get extra(sl,nsetCurrentHorizontalSpeed))
+end
+
+plotscript, xgetCurrentVelocity,sl,begin
+	return (get extra(sl,nsetCurrentVelocity))
+end
+
+plotscript, xgetMaxJumpHangtime,sl,begin
+	return (get extra(sl,nsetMaxJumpHangtime))
+end
+
+plotscript, xgetCurrentJumpHangtime,sl,begin
+	return (get extra(sl,nsetCurrentJumpHangtime))
+end
+
+plotscript, xgetHangtimeTiming,sl,begin
+	return (get extra(sl,nsetHangtimeTiming))
+end
+
+plotscript, xgetActionState,sl,begin
+	return (get extra(sl,nsetActionState))
+end
+
+plotscript, xgetAnimationFirstFrame,sl,begin
+	return (get extra(sl,nsetAnimationFirstFrame))
+end
+
+plotscript, xgetAnimationLastFrame,sl,begin
+	return (get extra(sl,nsetAnimationLastFrame))
+end
+
+
+plotscript, xgetRunAnimationFirstFrame,sl,begin
+	return (get extra(sl,nsetRunAnimationFirstFrame))
+end
+
+plotscript, xgetRunAnimationLastFrame,sl,begin
+	return (get extra(sl,nsetRunAnimationLastFrame))
+end
+
+
+plotscript, xgetJumpAnimationFirstFrame,sl,begin
+	return (get extra(sl,nsetJumpAnimationFirstFrame))
+end
+
+plotscript, xgetJumpAnimationLastFrame,sl,begin
+	return (get extra(sl,nsetJumpAnimationLastFrame))
+end
+
+
+plotscript, xgetIdleAnimationFirstFrame,sl,begin
+	return (get extra(sl,nsetIdleAnimationFirstFrame))
+end
+
+plotscript, xgetIdleAnimationLastFrame,sl,begin
+	return (get extra(sl,nsetIdleAnimationLastFrame))
+end
+
+
+plotscript, xgetCrouchAnimationFirstFrame,sl,begin
+	return (get extra(sl,nsetCrouchAnimationFirstFrame))
+end
+
+plotscript, xgetCrouchAnimationLastFrame,sl,begin
+	return (get extra(sl,nsetCrouchAnimationLastFrame))
+end
+
+plotscript, xgetFallAnimationFirstFrame,sl,begin
+	return (get extra(sl,nsetFallAnimationFirstFrame))
+end
+
+plotscript, xgetFallAnimationLastFrame,sl,begin
+	return (get extra(sl,nsetFallAnimationLastFrame))
+end
+plotscript, xgetShootAnimationFirstFrame,sl,begin
+	return (get extra(sl,nsetShootAnimationFirstFrame))
+end
+
+plotscript, xgetShootAnimationLastFrame,sl,begin
+	return (get extra(sl,nsetShootAnimationLastFrame))
+end
+
+
+plotscript, xgetCurrentFrame,sl,begin
+	return (get extra(sl,nsetCurrentFrame))
+end
+
+plotscript, xgetAnimationSpeed,sl,begin
+	return (get extra(sl,nsetAnimationSpeed))
+end
+
+plotscript, xgetImagePaletteNumber,sl,begin
+	return (get extra(sl,nsetImagePaletteNumber))
+end
+
+
+
+
+
+plotscript, xisidle, sl,  begin
+		return (get extra(sl,nisidle))	
+end
+
+plotscript, xisrunning, sl, begin
+		return (get extra(sl,nisrunning))	
+end
+
+plotscript, xisjumping, sl, begin
+		return (get extra(sl,nisjumping))	
+end
+
+
+plotscript, xisfalling, sl, begin
+	return (get extra(sl,nisfalling))
+	
+end
+
+plotscript, xiscrouching, sl, begin
+	return (get extra(sl,niscrouching))
+
+end
+
+plotscript, xisshooting, sl, begin
+		return (get extra(sl,nisshooting))
+end
+
+
+
+
+plotscript, xsetjumping,sl,x,begin
+	set extra(sl,nisjumping,x)
+end
+
+plotscript, xsetfalling,sl,x,begin
+	set extra(sl,nisfalling,x)
+end
+
+
+plotscript, xsetcrouching,sl,x,begin
+	set extra(sl,niscrouching,x)
+
+end
+plotscript, xsetidle,sl,x,begin
+	set extra(sl,nisidle,x)
+end
+
+plotscript, xsetshooting,sl,x,begin
+	set extra(sl,nisshooting,x)
+end
+plotscript, xsetrunning,sl,x,begin
+	set extra(sl,nisrunning,x)
+end
+

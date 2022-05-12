@@ -1,0 +1,18 @@
+# Globals and constants are held in here.
+
+define constant, begin
+	#lookup constants
+	#timer constants
+	0, timer:gameloop
+end
+
+global variable, begin
+	0, game:state,
+	1, framecount,
+	2, debug_slowdown,
+	3, ob_size,
+	4, gameloaded,
+	5, mobhandler, # This is an npc, holds data about the current mobs on the map.
+	6, player_slice,
+	7, slopeoffset
+end
