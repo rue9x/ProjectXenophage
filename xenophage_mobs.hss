@@ -39,6 +39,15 @@ script, createMobCollider, sl, begin
   put slice (sl2, 0, slice height(sl)/2) 
   set slice extra(sl2,0,3)
   
+  # Bottom middle, a halfway up a tile (for slopes)
+  sl2:=create rect (1, 1, -1)
+  set slice width(sl2,1)
+  set slice height(sl2,1)
+  set parent(sl2,sl)
+  put slice (sl2, slice width(sl)/2, slice height(sl)--10)
+  set slice extra(sl2,0,4)
+  
+
   return (sl2)
 end
 
@@ -48,7 +57,7 @@ script, getCollider, sl, dir, begin
 	variable (i)
 	variable(potential_candidate)
 	retval:=-1
-	for (i,0,3) do (
+	for (i,0,4) do (
 		potential_candidate:=slice child(sl,i)
 		if (get slice extra(potential_candidate,0) == dir) then (retval:=potential_candidate)
 	)

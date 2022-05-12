@@ -36,11 +36,14 @@ script, gameloop, begin
 		# Check inputs and key changes.
 		# Check and change object states.
 		#updateCamera()
-		placeplayerathero()
 		check_keys()
 		check_debug_keys()
 		handlePlayerJump()
 		fallPlayer()
+		if (xgetcurrentdirection(player_slice)==3) then (horiz flip sprite(player_slice,true))
+		if (xgetcurrentdirection(player_slice)==1) then (horiz flip sprite(player_slice,false))
+		
+		camera follows slice(player_slice)
 	end
 
 	subscript, drawEvent, begin
@@ -92,6 +95,23 @@ script, sliceisoncollision,sl, useparent=false,begin
 	)
 end
 
+script, sliceisonslope,sl, useparent=false,begin
+	variable (retval)
+	if (useparent==true) then (
+		retval:=zoneatpixel(slice x(sl)+slice x(slice parent(sl)),slice y(sl)+slice y(slice parent(sl)))
+	)
+	else (
+		retval:=zoneatpixel(slice x(sl),slice y(sl))
+	)
+	if (retval==2) then (
+		return (true)
+	)
+	else (
+		return (false)
+	)
+end
+
+
 script, launchPlayerJump, begin
 	# This just checks to see if you _can_ jump, and then puts you in jumping mode.
 	variable (grounded)
@@ -112,7 +132,7 @@ script, handlePlayerJump, begin
 
 	if (xisJumping(player_slice)) then (
 		if (xgetcurrentjumphangtime(player_slice) < xgetmaxjumphangtime(player_slice)) then (
-			put hero(me,hero pixel x(me) hero pixel y(me)--xgetjumpspeed(player_slice))
+			put slice(player_slice,slice x(player_slice) slice y(player_slice)--xgetjumpspeed(player_slice))
 		)
 
 
@@ -129,10 +149,12 @@ end
 
 script, fallPlayer, begin
 	variable (grounded)
+	variable (onslope)
 	grounded:=sliceisoncollision(getCollider(player_slice,down),true)
-	if (grounded == false) then (
+	onslope:=sliceisonslope(getCollider(player_slice,4),true)
+	if (grounded == false && onslope == false) then (
 		if (xisjumping(player_slice) == false) then (
-			put hero(me,hero pixel x(me) hero pixel y(me)+xgetfallspeed(player_slice))
+			put slice(player_slice,slice x(player_slice),slice y(player_slice)+xgetfallspeed(player_slice))
 		)
 	)
 
@@ -143,28 +165,64 @@ script, movePlayer, dir, amount=4,begin
 	variable (rightCollider)
  	variable (upCollider)
  	variable (downCollider)
- 	
+ 	variable (ymod)
  	leftCollider:=getCollider(player_slice,left)
 	rightCollider:=getCollider(player_slice,right)
 	upCollider:=getCollider(player_slice,up)
  	downCollider:=getCollider(player_slice,down)
+
+ 	ymod:=0
+	xsetcurrentdirection(player_slice,dir)
+ 	ymod:=checkSlopes()
+ 	put slice(player_slice,slice x(player_slice), slice y(player_slice)+ymod)
  	if (dir == left) then(
 		if (sliceisoncollision(leftCollider,true) == false) then (
-			put hero (me,hero pixel x(me)--amount, hero pixel y(me))
+			put slice(player_slice,slice x(player_slice)--amount, slice y(player_slice))
 			return (true)
 		)
-		else (return (false))
 	)
 
 	if (dir == right) then(
 		if (sliceisoncollision(rightCollider,true) == false) then (
-			put hero (me,hero pixel x(me)+amount, hero pixel y(me))
+			put slice(player_slice,slice x(player_slice)+amount, slice y(player_slice))
 			return (true)
 		)
-		else (return (false))
 	)
 end
 
+script, checkSlopes, begin
+ 	variable (leftCollider)
+ 	variable (rightCollider)
+ 	variable (upCollider)
+ 	variable (downCollider)
+ 	variable (slopeCollider)
+ 	variable (zonecheck)
+ 	leftCollider:=getCollider(player_slice,left)
+	rightCollider:=getCollider(player_slice,right)
+	upCollider:=getCollider(player_slice,up)
+ 	downCollider:=getCollider(player_slice,down)
+ 	slopeCollider:=getCollider(player_slice,4)
+	if (sliceisonslope(slopeCollider,true) == true) then (
+		if (xgetcurrentdirection(player_slice) == 1) then (
+			if (sliceisoncollision(rightCollider,true) == true) then (
+				return (-5)
+			)
+			if (sliceisoncollision(rightCollider,true) == false) then (
+				return (-10)
+			)
+
+		)
+		if (xgetcurrentdirection(player_slice) == 3) then (
+			if (sliceisoncollision(leftCollider,true) == true) then (
+				return (-5)
+			)
+			if (sliceisoncollision(leftCollider,true) == false) then (
+				return (-10)
+			)
+
+		)
+	)	
+end
 script, check_debug_keys, begin
 	if (key is pressed(key:Shift) && key is pressed(key:A)) then (
 		$1 = "Animation Frame: %d"
@@ -236,5 +294,6 @@ plotscript, defnewgame, begin
 	wait(1)
 	create_player() # this actually sets player_slice
 	createMobCollider(player_slice)
+	placeplayerathero()
 	gameloop()
 end
