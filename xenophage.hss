@@ -37,31 +37,35 @@ script, updateCamera, begin
 
 end
 script, gameloop, begin
-	subscript, tickEvent, begin
-		# Check inputs and key changes.
-		# Check and change object states.
-		updateCamera()
-		check_keys()
-		check_debug_keys()
-		fallPlayer()
-		handlePlayerJump()
-		prepPlayerAnimations()
-		if (xgetcurrentdirection(player_slice)==3) then (horiz flip sprite(player_slice,true))
-		if (xgetcurrentdirection(player_slice)==1) then (horiz flip sprite(player_slice,false))
-		
-	end
+	while (true) do (
+		subscript, tickEvent, begin
+			# Check inputs and key changes.
+			# Check and change object states.
+			updateCamera()
+			check_keys()
+			check_debug_keys()
+			fallPlayer()
+			handlePlayerJump()
+			prepPlayerAnimations()
+			if (xgetcurrentdirection(player_slice)==3) then (horiz flip sprite(player_slice,true))
+			if (xgetcurrentdirection(player_slice)==1) then (horiz flip sprite(player_slice,false))
+				
+		end
 
-	subscript, drawEvent, begin
-		# Check image states and change image states.
-		tickFrameCount()
-		replace sprite(player_slice,sprite type:large enemy, get_anim_frame(xgetanimationfirstframe(player_slice),xgetanimationlastframe(player_slice),xgetanimationspeed(player_slice)))
-	end
+		subscript, drawEvent, begin
+			# Check image states and change image states.
+			tickFrameCount()
+			replace sprite(player_slice,sprite type:large enemy, get_anim_frame(xgetanimationfirstframe(player_slice),xgetanimationlastframe(player_slice),xgetanimationspeed(player_slice)))
+		    put slice (cursorSlice, mouse pixel x, mouse pixel y)
+		end
 
-	#set script "gameloop" to run in 1 tick again.
-	set timer (timer:gameloop, 1, debug_slowdown, @gameloop)
+		#set script "gameloop" to run in 1 tick again.
+		#set timer (timer:gameloop, 1, debug_slowdown, @gameloop)
 
-	tickEvent()
-	drawEvent()
+			tickEvent()
+			drawEvent()
+			wait (debug_slowdown)
+	)
 end
 
 script, prepPlayerAnimations, begin
@@ -119,6 +123,19 @@ script, check_keys, begin
 			launchPlayerJump()
 				
 	)
+	if (mouse button (left button) == true) then (
+		# This is when the left mouse button is currently being held down.
+		activateMouse()
+	)
+	else (
+		deactivateMouse()
+	)
+	if (mouse release (left button) == true) then (
+		interactAtMouse()
+	)
+	
+	
+
 end
 
 script, sliceisoncollision,sl, useparent=false,begin
@@ -365,13 +382,54 @@ script, check_debug_keys, begin
 
 end
 
+script, mousesetup, begin
+  # Hides the normal mouse cursor
+  init mouse
+
+  # Use a small enemy sprite (ID 1) slice as a mouse cursor
+  cursorSlice := load small enemy sprite (0)
+
+  # The following is optional: causes the mouse to be displayed
+  # above textboxes and above all other slices (it still appears behind menus though)
+  move slice above (cursorSlice, lookup slice (sl:textbox layer))
+end
+
+
+# These two are necessary if you want the mouse to actually work like a crosshair.
+script, cursorX, begin
+	return (camera pixel x + mouse pixel x+slice width(cursorSlice)/2)
+end
+
+script, cursory, begin
+	return (camera pixel y + mouse pixel y+slice height(cursorSlice)/2)
+end
+
+script, activateMouse, begin
+	set sprite palette(cursorSlice,6)
+end
+
+script, deactivateMouse, begin
+	set sprite palette(cursorSlice,4)
+
+end
+script, interactAtMouse, begin
+	variable (cx)
+	variable (cy)
+	cx:=cursorx()
+	cy:=cursory()
+
+	if (NPC at pixel (cx,cy) <> false) then (
+		use npc (NPC at pixel (cx,cy))
+	)
+
+end
+
 plotscript, defnewgame, begin
 	gameloaded:=0
 	ob_size:=setupArrayDefinitions()
 	initiateMobs()
 	debug_slowdown:=1
 	framecount:=1
-	init mouse
 	suspend player
 	#start the game loop
 	slopeoffset:=8
@@ -379,5 +437,6 @@ plotscript, defnewgame, begin
 	create_player() # this actually sets player_slice
 	createMobCollider(player_slice)
 	placeplayerathero()
+	mousesetup()
 	gameloop()
 end

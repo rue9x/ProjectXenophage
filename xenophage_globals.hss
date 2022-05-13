@@ -14,5 +14,6 @@ global variable, begin
 	4, gameloaded,
 	5, mobhandler, # This is an npc, holds data about the current mobs on the map.
 	6, player_slice,
-	7, slopeoffset
+	7, slopeoffset,
+	8, cursorSlice
 end
