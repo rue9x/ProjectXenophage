@@ -32,6 +32,7 @@ global variable (7030,niscrouching)
 global variable (7031,nisshooting)
 global variable (7032,nsetFallAnimationFirstFrame)
 global variable (7033,nsetFallAnimationLastFrame)
+global variable (7034,nsetTTL)
 plotscript, setupArrayDefinitions, begin
 	# This should be called one time ever, at the beginning of the game.
 	# It's used so the array functions know what slot belongs to what value.
@@ -69,6 +70,7 @@ plotscript, setupArrayDefinitions, begin
 	nisfalling:=					31
 	niscrouching:=					32
 	nisshooting:=					33
+	nsetTTL:=						34
 	return(34) # Always return the final value! Update this!
 end
 
@@ -366,3 +368,12 @@ plotscript, xsetrunning,sl,x,begin
 	set extra(sl,nisrunning,x)
 end
 
+
+
+script, xSetTTL, sl, x, begin
+	set extra(sl,nsetTTL,x)
+end
+
+script, xGetTTL, sl, begin
+	return (get extra (sl,nsetTTL))
+end

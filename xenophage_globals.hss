@@ -16,4 +16,5 @@ global variable, begin
 	6, player_slice,
 	7, slopeoffset,
 	8, cursorSlice
+	9, shotHolder
 end
