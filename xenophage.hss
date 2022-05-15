@@ -16,10 +16,10 @@ script, wall at pixel, x, y, begin
     x := x / 20
     y := y / 20
     if (read pass block (x, y)) then (
-    	return (true)
+    	exit returning (true)
     )
     else (
-    	return (false)
+    	exit returning (false)
     )
 end
 
@@ -36,32 +36,66 @@ script, updateCamera, begin
 	camera follows slice(player_slice)
 
 end
+script, checkShotTTL, begin
+	variable (oblen)
+	variable (i)
+	variable (sl)
+	
+	if (extra length (shotHolder) > 0) then (
+
+		# Reduce the shot TTL of each shot by one.
+		for (i,0,extra length(shotHolder)--1) do (
+			# Reduce the TTL of each element by 1.
+			sl:=get extra(shotHolder,i)
+			if (slice is valid(sl)) then (
+				xsetTTL(sl,xgetTTL(sl)--1)
+			)
+		)
+
+
+		# Shot cleanup. For some reason, leaves one weird one. TODO: Fix last weird one.
+		sl:=get extra(shotHolder,-1)
+		if (slice is valid(sl)) then (
+			if (xgetTTL(sl) <= 0) then (
+				free slice(sl)
+				resize extra(shotHolder,extra length(shotHolder)--1)
+			)
+		)
+	)	
+
+end
+
 script, gameloop, begin
-	subscript, tickEvent, begin
-		# Check inputs and key changes.
-		# Check and change object states.
-		updateCamera()
-		check_keys()
-		check_debug_keys()
-		fallPlayer()
-		handlePlayerJump()
-		prepPlayerAnimations()
-		if (xgetcurrentdirection(player_slice)==3) then (horiz flip sprite(player_slice,true))
-		if (xgetcurrentdirection(player_slice)==1) then (horiz flip sprite(player_slice,false))
-		
-	end
+	while (true) do (
+		subscript, tickEvent, begin
+			# Check inputs and key changes.
+			# Check and change object states.
+			variable (shot_i)
+			updateCamera()
+			check_keys()
+			check_debug_keys()
+			fallPlayer()
+			handlePlayerJump()
+			prepPlayerAnimations()
+			if (xgetcurrentdirection(player_slice)==3) then (horiz flip sprite(player_slice,true))
+			if (xgetcurrentdirection(player_slice)==1) then (horiz flip sprite(player_slice,false))
+			checkShotTTL()
+		end
 
-	subscript, drawEvent, begin
-		# Check image states and change image states.
-		tickFrameCount()
-		replace sprite(player_slice,sprite type:large enemy, get_anim_frame(xgetanimationfirstframe(player_slice),xgetanimationlastframe(player_slice),xgetanimationspeed(player_slice)))
-	end
+		subscript, drawEvent, begin
+			# Check image states and change image states.
+			tickFrameCount()
+			replace sprite(player_slice,sprite type:large enemy, get_anim_frame(xgetanimationfirstframe(player_slice),xgetanimationlastframe(player_slice),xgetanimationspeed(player_slice)))
+		    put slice (cursorSlice, mouse pixel x, mouse pixel y)
+		end
 
-	#set script "gameloop" to run in 1 tick again.
-	set timer (timer:gameloop, 1, debug_slowdown, @gameloop)
+		#set script "gameloop" to run in 1 tick again.
+		#set timer (timer:gameloop, 1, debug_slowdown, @gameloop)
 
-	tickEvent()
-	drawEvent()
+			tickEvent()
+			drawEvent()
+			wait (debug_slowdown)
+	)
 end
 
 script, prepPlayerAnimations, begin
@@ -97,7 +131,7 @@ script, get_anim_frame,first,last,spd, begin
 	retval:=framecount / spd
 	cell_num:=retval,mod,((last -- first)+1) # This will return just which cell number, but not the actual sprite to play.
 	retval:= first + cell_num
-	return (retval)
+	exit returning (retval)
 end
 
 script, check_keys, begin
@@ -119,14 +153,34 @@ script, check_keys, begin
 			launchPlayerJump()
 				
 	)
+	if (mouse button (left button) == true) then (
+		# This is when the left mouse button is currently being held down.
+		activateMouse()
+	)
+	else (
+		deactivateMouse()
+	)
+	
+	if (mouse button(right button) == true) then (
+		variable (newShot)
+		newShot:=createShot()
+		append extra(shotHolder, newShot)	
+	)
+	
+	if (mouse release (left button) == true) then (
+		interactAtMouse()
+	)
+	
+	
+
 end
 
 script, sliceisoncollision,sl, useparent=false,begin
 	if (useparent==true) then (
-		return (wallatpixel(slice x(sl)+slice x(slice parent(sl)),slice y(sl)+slice y(slice parent(sl))))
+		exit returning (wallatpixel(slice x(sl)+slice x(slice parent(sl)),slice y(sl)+slice y(slice parent(sl))))
 	)
 	else (
-		return (wallatpixel(slice x(sl),slice y(sl)))
+		exit returning (wallatpixel(slice x(sl),slice y(sl)))
 	)
 end
 
@@ -139,10 +193,10 @@ script, sliceisonslope,sl, useparent=false,begin
 		retval:=zoneatpixel(slice x(sl),slice y(sl))
 	)
 	if (retval==2) then (
-		return (true)
+		exit returning (true)
 	)
 	else (
-		return (false)
+		exit returning (false)
 	)
 end
 
@@ -265,38 +319,38 @@ script, checkSlopes, begin
 	if (sliceisonslope(slopeCollider,true) == true) then (
 		if (xgetcurrentdirection(player_slice) == 1) then (
 			if (sliceisoncollision(rightCollider,true) == true) then (
-				return (0--slopeoffset)
+				exit returning (0--slopeoffset)
 				break
 			)
 			if (sliceisoncollision(rightCollider,true) == false) then (
-				return (0--slopeoffset)
+				exit returning (0--slopeoffset)
 				break
 			)
 			if (sliceisoncollision(downCollider,true) == true) then (
-				return (slopeoffset)
+				exit returning (slopeoffset)
 				break
 			)
 			if (sliceisoncollision(downCollider,true) == false) then (
-				return (slopeoffset)
+				exit returning (slopeoffset)
 				break
 			)
 
 		)
 		if (xgetcurrentdirection(player_slice) == 3) then (
 			if (sliceisoncollision(leftCollider,true) == true) then (
-				return (0--slopeoffset)
+				exit returning (0--slopeoffset)
 				break
 			)
 			if (sliceisoncollision(leftCollider,true) == false) then (
-				return (0--slopeoffset)
+				exit returning (0--slopeoffset)
 				break
 			)
 			if (sliceisoncollision(downCollider,true) == true) then (
-				return (slopeoffset)
+				exit returning (slopeoffset)
 				break
 			)
 			if (sliceisoncollision(downCollider,true) == false) then (
-				return (slopeoffset)
+				exit returning (slopeoffset)
 				break
 			)
 
@@ -365,13 +419,61 @@ script, check_debug_keys, begin
 
 end
 
+script, mousesetup, begin
+  # Hides the normal mouse cursor
+  init mouse
+
+  # Use a small enemy sprite (ID 1) slice as a mouse cursor
+  cursorSlice := load small enemy sprite (0)
+
+  # The following is optional: causes the mouse to be displayed
+  # above textboxes and above all other slices (it still appears behind menus though)
+  move slice above (cursorSlice, lookup slice (sl:textbox layer))
+end
+
+
+# These two are necessary if you want the mouse to actually work like a crosshair.
+script, cursorX, begin
+	variable (offset)
+	# offset:=+slice width(cursorSlice)/2
+	offset:=0
+	exit returning (camera pixel x + mouse pixel x+offset)
+end
+
+script, cursory, begin
+	variable (offset)
+	# offset:=+slice height(cursorSlice)/2
+	offset:=0
+	exit returning (camera pixel y + mouse pixel y+offset)
+end
+
+script, activateMouse, begin
+	set sprite palette(cursorSlice,16)
+end
+
+script, deactivateMouse, begin
+	set sprite palette(cursorSlice,15)
+
+end
+script, interactAtMouse, begin
+	variable (cx)
+	variable (cy)
+	cx:=cursorx()
+	cy:=cursory()
+
+	if (NPC at pixel (cx,cy) <> false) then (
+		use npc (NPC at pixel (cx,cy))
+	)
+
+end
+
 plotscript, defnewgame, begin
 	gameloaded:=0
-	ob_size:=setupArrayDefinitions()
+	ob_size:=setupArrayDefinitions()+1
 	initiateMobs()
+	initiateShots()
 	debug_slowdown:=1
 	framecount:=1
-	init mouse
 	suspend player
 	#start the game loop
 	slopeoffset:=8
@@ -379,5 +481,42 @@ plotscript, defnewgame, begin
 	create_player() # this actually sets player_slice
 	createMobCollider(player_slice)
 	placeplayerathero()
+	mousesetup()
 	gameloop()
+end
+
+script, createShot, typ=0, begin
+	variable (sl)
+	variable (xoffset)
+	variable (yoffset)
+	if (typ==0) then (
+		sl := load small enemy sprite(3,0)
+		resize extra(sl, ob_size)
+		xsetTTL(sl,100)
+		xoffset:=0
+		yoffset:=0
+
+		if (mouse pixel x < slice screen x(player_slice)) then (
+			xoffset:=-1
+		)
+		if (mouse pixel x > slice screen x(player_slice)+slice width(player_slice)) then (
+			xoffset:=1
+		)
+		
+		if (mouse pixel y < slice screen y(player_slice)) then (
+			yoffset:=-1
+		)
+		if (mouse pixel y > slice screen y(player_slice)+slice height(player_slice)) then (
+			yoffset:=1
+		)
+		
+		if (xoffset==0 && yoffset==0) then (
+			xoffset:=xgetCurrentDirection(player_slice)
+			yoffset:=0
+		)
+		put slice (sl, slice screen x(player_slice),slice screen y(player_slice))
+		set slice velocity(sl,10*xoffset,10*yoffset)
+	)
+	exit returning (sl)
+	
 end

@@ -124,4 +124,11 @@ script, initiateMobs, begin
   # All of the slice numbers for every mob created get added into the NPC extra of
   # this NPC for easy retrieval later.
   mobhandler:=create global NPC (0, 0, 0, south)
+  resize extra(mobhandler,0)
+end
+
+script, initiateShots, begin
+  # Might as well have this in here too. Same thing, but for shots.
+  shotHolder:=create global NPC (0, 0, 0, south)
+  resize extra(shotHolder,0)
 end
