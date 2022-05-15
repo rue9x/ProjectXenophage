@@ -164,7 +164,6 @@ script, check_keys, begin
 	if (mouse button(right button) == true) then (
 		variable (newShot)
 		newShot:=createShot()
-		show value(newShot)
 		append extra(shotHolder, newShot)	
 	)
 	
@@ -488,12 +487,35 @@ end
 
 script, createShot, typ=0, begin
 	variable (sl)
+	variable (xoffset)
+	variable (yoffset)
 	if (typ==0) then (
 		sl := load small enemy sprite(3,0)
 		resize extra(sl, ob_size)
 		xsetTTL(sl,100)
+		xoffset:=0
+		yoffset:=0
+
+		if (mouse pixel x < slice screen x(player_slice)) then (
+			xoffset:=-1
+		)
+		if (mouse pixel x > slice screen x(player_slice)+slice width(player_slice)) then (
+			xoffset:=1
+		)
+		
+		if (mouse pixel y < slice screen y(player_slice)) then (
+			yoffset:=-1
+		)
+		if (mouse pixel y > slice screen y(player_slice)+slice height(player_slice)) then (
+			yoffset:=1
+		)
+		
+		if (xoffset==0 && yoffset==0) then (
+			xoffset:=xgetCurrentDirection(player_slice)
+			yoffset:=0
+		)
 		put slice (sl, slice screen x(player_slice),slice screen y(player_slice))
-		set slice velocity(sl,10,10)
+		set slice velocity(sl,10*xoffset,10*yoffset)
 	)
 	exit returning (sl)
 	
