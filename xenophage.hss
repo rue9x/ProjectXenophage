@@ -24,6 +24,17 @@ script, wall at pixel, x, y, begin
 end
 
 
+script, door at pixel, x, y, begin
+    x := x / 20
+    y := y / 20
+    if (door at spot (x, y) > -1) then (
+    	exit returning (door at spot (x, y))
+    )
+    else (
+    	exit returning (-1)
+    )
+end
+
 
 script, tickFrameCount, begin
 	framecount:=framecount+1
@@ -80,6 +91,7 @@ script, gameloop, begin
 			if (xgetcurrentdirection(player_slice)==3) then (horiz flip sprite(player_slice,true))
 			if (xgetcurrentdirection(player_slice)==1) then (horiz flip sprite(player_slice,false))
 			checkShotTTL()
+			checkForDoor()
 		end
 
 		subscript, drawEvent, begin
@@ -175,6 +187,19 @@ script, check_keys, begin
 
 end
 
+script, sliceOnDoor, sl, useparent=false, begin
+	variable (retval)
+	retval:=-1
+	if (useparent==true) then (
+		retval:=door at pixel(slice x(sl)+slice x(slice parent(sl)),slice y(sl)+slice y(slice parent(sl)))
+
+	)
+	if (useparent==false) then (
+		retval:=door at pixel(slice x(sl),slice y(sl))
+	)
+	exit returning (retval)
+
+end
 script, sliceisoncollision,sl, useparent=false,begin
 	if (useparent==true) then (
 		exit returning (wallatpixel(slice x(sl)+slice x(slice parent(sl)),slice y(sl)+slice y(slice parent(sl))))
@@ -467,7 +492,7 @@ script, interactAtMouse, begin
 
 end
 
-plotscript, defnewgame, begin
+plotscript, initializeRoom, begin
 	gameloaded:=0
 	ob_size:=setupArrayDefinitions()+1
 	initiateMobs()
@@ -485,6 +510,13 @@ plotscript, defnewgame, begin
 	gameloop()
 end
 
+plotscript, checkForDoor, begin
+	variable (collider)
+	collider:=getcollider(player_slice,4) # Down collider
+	if (sliceOnDoor(collider,true) <> -1) then (
+		use door (sliceondoor(collider,true),true)
+	)
+end
 script, createShot, typ=0, begin
 	variable (sl)
 	variable (xoffset)
